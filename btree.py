@@ -12,7 +12,7 @@ class Node:
             ptrs = []
         if values is None:
             values = []
-        self.b = b # branching factor
+        self.b = b # branching factor mpmofnmsiongriogsfgor
         self.values = values # Values (the data from the pk column)
         self.ptrs = ptrs # ptrs (the indexes of each datapoint or the index of another bucket)
         self.left_sibling = left_sibling # the index of a buckets left sibling
