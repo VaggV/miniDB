@@ -1,4 +1,5 @@
 """
+gnoridsugbriubgurdsbgoirsbgiorsbgisrbg
 https://en.wikipedia.org/wiki/B%2B_tree
 """
 
@@ -12,7 +13,7 @@ class Node:
             ptrs = []
         if values is None:
             values = []
-        self.b = b # branching factor mpmofnmsiongriogsfgor
+        self.b = b # branching factor
         self.values = values # Values (the data from the pk column)
         self.ptrs = ptrs # ptrs (the indexes of each datapoint or the index of another bucket)
         self.left_sibling = left_sibling # the index of a buckets left sibling
