@@ -1,13 +1,17 @@
-'''
+"""
 https://en.wikipedia.org/wiki/B%2B_tree
-'''
+"""
 
 class Node:
-    '''
+    """
     Node abstraction. Represents a single bucket
-    '''
-    def __init__(self, b, values=[], ptrs=[],\
+    """
+    def __init__(self, b, values=None, ptrs=None,
                  left_sibling=None, right_sibling=None, parent=None, is_leaf=False):
+        if ptrs is None:
+            ptrs = []
+        if values is None:
+            values = []
         self.b = b # branching factor
         self.values = values # Values (the data from the pk column)
         self.ptrs = ptrs # ptrs (the indexes of each datapoint or the index of another bucket)
@@ -18,13 +22,13 @@ class Node:
 
 
     def find(self, value, return_ops=False):
-        '''
+        """
         Returns the index of the next node to search for a value if the node is not a leaf (a ptrs of the available ones).
         If it is a leaf (we have found the appropriate node), it returns nothing.
 
         value: the value that we are searching for
         return_ops: set to True if you want to use the number of operations (for benchmarking)
-        '''
+        """
         ops = 0 # number of operations (<>= etc). Used for benchmarking
         if self.is_leaf: #
             return
@@ -46,7 +50,7 @@ class Node:
 
 
     def insert(self, value, ptr, ptr1=None):
-        '''
+        """
         Insert the value and its ptr/s to the appropriate place (node wise).
         User can input two ptrs to insert to a non leaf node.
 
@@ -54,7 +58,7 @@ class Node:
         ptr: the ptr of the inserted value (its index for example)
         ptr1: the 2nd ptr (in case the user wants to insert into a nonleaf node for ex)
 
-        '''
+        """
         # for each value in the node, if the user supplied value is smaller, insert the value and its ptr into that position
         # if a second ptr is provided, insert it right next to the 1st ptr
         # else (no value in the node is larger) append value and ptr/s to the back of the list.
@@ -76,9 +80,9 @@ class Node:
 
 
     def show(self):
-        '''
+        """
         print the node's value and important info
-        '''
+        """
         print('Values', self.values)
         print('ptrs', self.ptrs)
         print('Parent', self.parent)
@@ -88,18 +92,18 @@ class Node:
 
 class Btree:
     def __init__(self, b):
-        '''
+        """
         The tree abstraction.
-        '''
+        """
         self.b = b # branching factor
         self.nodes = [] # list of nodes. Every new node is appended here
         self.root = None # the index of the root node
 
     def insert(self, value, ptr, rptr=None):
-        '''
+        """
         Insert the value and its ptr/s to the appropriate node (node-level insertion is covered by the node object).
         User can input two ptrs to insert to a non leaf node.
-        '''
+        """
         # if the tree is empty, add the first node and set the root index to 0 (the only node's index)
         if self.root is None:
             self.nodes.append(Node(self.b, is_leaf=True))
@@ -114,12 +118,12 @@ class Btree:
             self.split(index)
 
     def _search(self, value, return_ops=False):
-        '''
+        """
         Returns the index of the node that the given value exist or should exist in.
 
         value: the value that we are searching for
         return_ops: set to True if you want to use the number of operations (for benchmarking)
-        '''
+        """
         ops=0 # number of operations (<>= etc). Used for benchmarking
 
         #start with the root node
@@ -139,9 +143,9 @@ class Btree:
 
 
     def split(self, node_id):
-        '''
+        """
         Split the node with index=node_id
-        '''
+        """
         # fetch the node to be split
         node = self.nodes[node_id]
         # the value that will be propagated to the parent is the middle one.
@@ -153,7 +157,7 @@ class Btree:
             right_ptrs   = node.ptrs[len(node.ptrs)//2:]
 
             # create the new node with the right half of the old nodes values and ptrs (including the middle ones)
-            right = Node(self.b, right_values, right_ptrs,\
+            right = Node(self.b, right_values, right_ptrs,
                          left_sibling=node_id, right_sibling=node.right_sibling, parent=node.parent, is_leaf=node.is_leaf)
             # since the new node (right) will be the next one to be appended to the nodes list
             # its index will be equal to the length of the nodes list.
@@ -172,7 +176,7 @@ class Btree:
                 right_ptrs = node.ptrs[len(node.ptrs)//2+1:]
 
             # if nonleafs should be connected change the following two lines and add siblings
-            right = Node(self.b, right_values, right_ptrs,\
+            right = Node(self.b, right_values, right_ptrs,
                         parent=node.parent, is_leaf=node.is_leaf)
             # make sure that a non leaf node doesnt have a parent
             node.right_sibling = None
@@ -194,7 +198,7 @@ class Btree:
         if node.parent is None:
             # its the root that is split
             # new root contains the parent value and ptrs to the two recently split nodes
-            parent = Node(self.b, [new_parent_value], [node_id, len(self.nodes)-1]\
+            parent = Node(self.b, [new_parent_value], [node_id, len(self.nodes)-1]
                           ,parent=node.parent, is_leaf=False)
 
             # set root, and parent of split celss to the index of the new root node (len of nodes-1)
@@ -214,11 +218,10 @@ class Btree:
 
 
     def show(self):
-        '''
+        """
         Show important info for each node (sort the by level - root first, then left to right)
-        '''
-        nds = []
-        nds.append(self.root)
+        """
+        nds = [self.root]
         for ptr in nds:
             if self.nodes[ptr].is_leaf:
                 continue
@@ -232,8 +235,7 @@ class Btree:
 
     def plot(self):
         ## arrange the nodes top to bottom left to right
-        nds = []
-        nds.append(self.root)
+        nds = [self.root]
         for ptr in nds:
             if self.nodes[ptr].is_leaf:
                 continue
@@ -269,11 +271,11 @@ class Btree:
                 f.write(g)
 
     def find(self, operator, value):
-        '''
+        """
         Return ptrs of elements where btree_value"operator"value.
         Important, the user supplied "value" is the right value of the operation. That is why the operation are reversed below.
         The left value of the op is the btree value.
-        '''
+        """
         results = []
         # find the index of the node that the element should exist in
         leaf_idx, ops = self._search(value, True)
@@ -281,6 +283,7 @@ class Btree:
 
         if operator == '==':
             # if the element exist, append to list, else pass and return
+            # noinspection PyBroadException
             try:
                 results.append(target_node.ptrs[target_node.values.index(value)])
                 # print('Found')
