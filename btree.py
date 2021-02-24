@@ -143,9 +143,6 @@ class Btree:
             else:
                 self.merge(index)
 
-#ddd
-
-
     def merge(self, node_id):
         node = self.nodes[node_id]
         # if there is left sibling see if the left has plenty elements
