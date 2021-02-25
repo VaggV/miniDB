@@ -129,44 +129,62 @@ class Btree:
             print('Tree is empty')
             return
 
-            # find the index of the node that the value and its ptr/s should be inserted to (_search)
+        # find the index of the node that the value and its ptr/s should be inserted to (_search)
         index = self._search(value)
         # delete it
         self.nodes[index].delete(value, ptr)
 
+        # delete kai apo thn lista nodes tou Btree class
+        # prokyptoun omws sfalmata dioti mallon xreiazetai na
+        # diagrapsoume ki alla pragmata kai na valoume nees times
+        if len(self.nodes[index].values) == 0:
+            self.nodes.pop(index)
+            #self.root = len(self.nodes) - 1
+
         # the node has les than b/2-1 keys
         if len(self.nodes[index].values) < math.ceil(self.b / 2) - 1:
-            left_sibling_node = self.nodes[self.nodes[index].left_sibling]
-            right_sibling_node = self.nodes[self.nodes[index].right_sibling]
+            left_sibling_node = None
+            right_sibling_node = None
+            if self.nodes[index].left_sibling is not None: # borei na mhn yparxei aristero sibling
+                left_sibling_node = self.nodes[self.nodes[index].left_sibling]
+            if self.nodes[index].right_sibling is not None: # borei na mhn yparxei deksi sibling
+                right_sibling_node = self.nodes[self.nodes[index].right_sibling]
 
             # see if we can borrow from the left sibling
-            if left_sibling_node is not None and left_sibling_node.values < math.ceil(self.b / 2) - 1:
-                # insert to the node the max value from the left sibling and delete it from the sibling
-                self.nodes[index].insert(left_sibling_node.values[-1])
-                left_sibling_node.delete(left_sibling_node.values[-1])
-            # if we can't borrow from the left sibling, then we see if there is a left sibling and merge them
-            elif left_sibling_node is not None:
-                self.merge(index)
-                # make a new node
-                # new_values = self.nodes[index].values + left_sibling_node.values
-                # new_values.sort(reverse=False)
-                # new_ptrs = self.nodes[index].ptrs + left_sibling_node.ptrs
-                # new_node = Node(self, self.b, values=new_values.sort(reverse=False) , ptrs=new_ptrs.sort(reverse=False),
-                # left_sibling=self.nodes[index].left_sibling, right_sibling=self.nodes[index].right_sibling, parent=self.nodes[index].parent, is_leaf=self.nodes[index].is_leaf)
-                # self.nodes[index] = new_node
-            elif right_sibling_node is not None and right_sibling_node.values < math.ceil(self.b / 2) - 1:
-                # insert to the node the min value of the right sibling
-                self.nodes[index].insert(right_sibling_node.values[0])
-                right_sibling_node.delete(right_sibling_node.values[0])
-            # else merge with the right sibling
+            if left_sibling_node is not None:
+                if len(left_sibling_node.values) < math.ceil(self.b / 2) - 1:
+                    # insert to the node the max value from the left sibling and delete it from the sibling
+                    self.nodes[index].insert(left_sibling_node.values[-1])
+                    left_sibling_node.delete(left_sibling_node.values[-1])
+                    # if we can't borrow from the left sibling, then we see if there is a left sibling and merge them
+                else:
+                    self.merge(index)
+                    # make a new node
+                    # new_values = self.nodes[index].values + left_sibling_node.values
+                    # new_values.sort(reverse=False)
+                    # new_ptrs = self.nodes[index].ptrs + left_sibling_node.ptrs
+                    # new_node = Node(self, self.b, values=new_values.sort(reverse=False) , ptrs=new_ptrs.sort(reverse=False),
+                    # left_sibling=self.nodes[index].left_sibling, right_sibling=self.nodes[index].right_sibling, parent=self.nodes[index].parent, is_leaf=self.nodes[index].is_leaf)
+                    # self.nodes[index] = new_node
             elif right_sibling_node is not None:
-                self.merge(index)
+                if len(right_sibling_node.values) < math.ceil(self.b / 2) - 1:
+                    # insert to the node the min value of the right sibling
+                    self.nodes[index].insert(right_sibling_node.values[0])
+                    right_sibling_node.delete(right_sibling_node.values[0])
+                # else merge with the right sibling
+                else:
+                    self.merge(index)
 
 
-
+    #######################################
+    #                MERGE                #
+    #######################################
 
     def merge(self, node_id):
-        pass
+        # when leaf node count is below ceil(b/2)
+        # merge with the left
+        node = self.nodes[node_id]
+        print(f"NODE {node}")
 
     def borrow(self, sibling, node_id):
         if sibling == 'left':
@@ -314,6 +332,7 @@ class Btree:
     def plot(self):
         # arrange the nodes top to bottom left to right
         nds = [self.root]
+        print(f"nds: {nds}")
         for ptr in nds:
             if self.nodes[ptr].is_leaf:
                 continue
@@ -323,7 +342,7 @@ class Btree:
         g = 'digraph G{\nforcelabels=true;\n'
 
         for i in nds:
-            node = self.nodes[i]
+            node = self.nodes[i] # changed i to i - 1
             g += f'{i} [label="{node.values}"]\n'
             if node.is_leaf:
                 continue
