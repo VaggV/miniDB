@@ -1,7 +1,7 @@
 """
 https://en.wikipedia.org/wiki/B%2B_tree
 """
-
+import math
 
 class Node:
     """
@@ -95,6 +95,12 @@ class Node:
                 return
 
 
+
+# parent einai to pio aristero stoixeio apo to deksi sibling
+
+# root einai h xamhloterh timh toy deksiou ypodentrou
+
+
 class Btree:
     def __init__(self, b):
         """
@@ -158,7 +164,7 @@ class Btree:
             # sort the values of the node to ascending
             node.values.sort(reverse=False)
             # check if the left node needs merge
-            if len(left_node.values) < self.b / 2:
+            if len(left_node.values) < math.ceil(self.b / 2): # nomizw edw thelei to ceiling function
                 self.merge(node.left_sibling)
                 print('left node mpika')
         else:
