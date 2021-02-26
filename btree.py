@@ -123,11 +123,15 @@ class Btree:
         self.min_child_count = math.ceil(b / 2) # then min_child is 2
         self.min_leaf_count = math.ceil(b / 2) - 1  # then min_leaf_count is 1
 
-    def insert(self, value, ptr, rptr=None):
+        self.insert_count = 0
+
+    def insert(self, value, rptr=None):
         """
         Insert the value and its ptr/s to the appropriate node (node-level insertion is covered by the node object).
         User can input two ptrs to insert to a non leaf node.
         """
+        ptr = self.insert_count
+        self.insert_count += 1
         # if the tree is empty, add the first node and set the root index to 0 (the only node's index)
         if self.root is None:
             self.nodes.append(Node(self.b, is_leaf=True))
@@ -456,6 +460,8 @@ class Btree:
         for i in range(len(self.nodes)):
             if not self.nodes[i].is_leaf:
                 print(f"[{i}] -- Pointers: {self.nodes[i].ptrs}, Values: {self.nodes[i].values}")
+                if i == 17:
+                    print(f"Index 18 node values: {self.nodes[18].values}")
         print("#############################################")
 
         print(f"Root: {self.root}")
