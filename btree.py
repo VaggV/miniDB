@@ -179,7 +179,7 @@ class Btree:
             elif is_internal:
                 left_sib = self.nodes[self.nodes[index].left_sibling]
                 right_sib = self.nodes[self.nodes[index].right_sibling]
-                if len(left_sib.values) > self.min_leaf_count and self.nodes[left_sib.parent] == self.nodes[index].parent:
+                if len(left_sib.values) > self.min_leaf_count: #and self.nodes[left_sib.parent] == self.nodes[index].parent:
                     self.nodes[index].values.append(max(self.nodes[self.nodes[index].left_sibling].values))
                     left_sib.values.pop(-1)
                     check_node.values[0] = self.nodes[index].values[0]
