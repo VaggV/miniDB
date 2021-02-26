@@ -10,12 +10,14 @@ class Node:
     """
 
     def __init__(self, b, values=None, ptrs=None,
-                 left_sibling=None, right_sibling=None, parent=None, is_leaf=False):
+                 left_sibling=None, right_sibling=None, parent=None, is_leaf=False, leaf_count=False):
         if ptrs is None:
             ptrs = []
         if values is None:
             values = []
         self.b = b  # branching factor
+        self.leaf_count = leaf_count # does nothing for now
+
         self.values = values  # Values (the data from the pk column)
         self.ptrs = ptrs  # ptrs (the indexes of each datapoint or the index of another bucket)
         self.left_sibling = left_sibling  # the index of a buckets left sibling
@@ -89,12 +91,17 @@ class Node:
         print('RS', self.right_sibling)
 
     def delete(self, value, ptr):
-        for index, existing_val in enumerate(self.values):
-            if value == existing_val:
-                self.values.pop(index)
-                self.ptrs.pop(index)
-                print(f'value: {value} deleted succesfully')
-                return
+        # for index, existing_val in enumerate(self.values):
+        #     if value == existing_val:
+        #         self.values.pop(index)
+        #         self.ptrs.pop(index)
+        #         print(f'value: {value} deleted succesfully')
+        #         return
+        print("Node Class delete Method:")
+        print(f"value: {value}, ptr: {ptr}, ptrs: {self.ptrs}")
+        self.values.remove(value)
+        self.ptrs.remove(ptr)
+        print(f"value: {value} deleted successfully")
 
 
 class Btree:
@@ -131,16 +138,26 @@ class Btree:
 
         # find the index of the node that the value and its ptr/s should be inserted to (_search)
         index = self._search(value)
-        # delete it
-        self.nodes[index].delete(value, ptr)
+
+        # allagh ths timhs tou root node
+        if self.nodes[self.root].values[0] == value:
+            self.nodes[self.root].values[0] = self.nodes[index].values[1]
+
+        # delete if it is leaf
+        if self.nodes[index].is_leaf:
+            self.nodes[index].delete(value, ptr)
 
         # delete kai apo thn lista nodes tou Btree class
-        # prokyptoun omws sfalmata dioti mallon xreiazetai na
-        # diagrapsoume ki alla pragmata kai na valoume nees times
         if len(self.nodes[index].values) == 0:
             self.nodes.pop(index)
             #self.root = len(self.nodes) - 1
+        elif len(self.nodes[index].values) == self.b // 2:
+            if self.nodes[self.nodes[index].parent].values[0] <= self.nodes[index].values[0]:
+                self.nodes[self.nodes[index].parent].values[0] = self.nodes[index].values[0]
 
+        #if the node has less elements than b/2
+        """
+        comment proswrino, o kwdikas apo katw lew na bei sto merge
         # the node has les than b/2-1 keys
         if len(self.nodes[index].values) < math.ceil(self.b / 2) - 1:
             left_sibling_node = None
@@ -174,7 +191,7 @@ class Btree:
                 # else merge with the right sibling
                 else:
                     self.merge(index)
-
+        """
 
     #######################################
     #                MERGE                #
@@ -330,10 +347,24 @@ class Btree:
             print('----')
 
     def plot(self):
+        #Test
+        print("################## LEAFS ####################")
+        for i in range(len(self.nodes)):
+            if self.nodes[i].is_leaf:
+                print(f"[{i}] -- Pointers: {self.nodes[i].ptrs}, Values: {self.nodes[i].values}")
+        print("#############################################")
+        print("\n################ NON-LEAFS ##################")
+        for i in range(len(self.nodes)):
+            if not self.nodes[i].is_leaf:
+                print(f"[{i}] -- Pointers: {self.nodes[i].ptrs}, Values: {self.nodes[i].values}")
+        print("#############################################")
+
         # arrange the nodes top to bottom left to right
         nds = [self.root]
-        print(f"nds: {nds}")
+        print("Plot method: ")
+        print(f"nds: {nds}, root: {self.root}")
         for ptr in nds:
+            print(f"[ptr: {ptr}], Loop nds: {nds}")
             if self.nodes[ptr].is_leaf:
                 continue
             nds.extend(self.nodes[ptr].ptrs)
