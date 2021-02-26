@@ -10,9 +10,7 @@ class Node:
     """
 
     def __init__(self, b, values=None, ptrs=None,
-                 left_sibling=None, right_sibling=None, parent=None, is_leaf=False, leaf_count=False, children=None):
-        if children is None:
-            children = []
+                 left_sibling=None, right_sibling=None, parent=None, is_leaf=False):
         if ptrs is None:
             ptrs = []
         if values is None:
@@ -26,7 +24,6 @@ class Node:
         self.parent = parent  # the index of a buckets parent
         self.is_leaf = is_leaf  # a boolean value signaling whether the node is a leaf or not
 
-        self.children = children # does nothing for now
 
 
     def find(self, value, return_ops=False):
@@ -74,13 +71,15 @@ class Node:
             if value < existing_val:
 
                 self.values.insert(index, value)
-                self.ptrs.insert(index + 1, ptr)
+                if ptr is not None:
+                    self.ptrs.insert(index + 1, ptr)
 
                 if ptr1:
                     self.ptrs.insert(index + 1, ptr1)
                 return
         self.values.append(value)
-        self.ptrs.append(ptr)
+        if ptr is not None:
+            self.ptrs.append(ptr)
         if ptr1:
             self.ptrs.append(ptr1)
 
@@ -101,8 +100,13 @@ class Node:
         #         self.ptrs.pop(index+1)
         print("Node Class delete Method:")
         print(f"value: {value}, ptr: {ptr}, ptrs: {self.ptrs}")
-        self.values.remove(value)
-        #self.ptrs.remove(ptr)
+        for index, existing_val in enumerate(self.values):
+            if value == existing_val:
+                self.values.pop(index)
+
+                if self.is_leaf:
+                    self.ptrs.pop(index)
+                break
         print(f"value: {value} deleted successfully")
 
 
@@ -137,13 +141,22 @@ class Btree:
         if len(self.nodes[index].values) == self.b:
             self.split(index)
 
-    def delete(self, value, ptr):
+    def delete(self, value):
         if self.root is None:
             print('Tree is empty')
             return
 
+
+
         # find the index of the node that the value and its ptr/s should be inserted to (_search)
         index = self._search(value)
+
+        index_in_node = self.nodes[index].values.index(value)
+        pointerr = self.nodes[index].ptrs[index_in_node]
+        print ("**************************************")
+        print(f"Value: {value}, pointer: {pointerr} ")
+        print(f"Node values: {self.nodes[index].values}, Node pointers: {self.nodes[index].ptrs}")
+        print ("**************************************")
 
         #Checks if the
         #value
@@ -158,52 +171,70 @@ class Btree:
                 break
 
         # delete it
-        self.nodes[index].delete(value, ptr)
+        self.nodes[index].delete(value, pointerr)
 
         if len(self.nodes[index].values) < self.min_leaf_count:
             # ama den yparxei kanena value h ta values einai ligotera tou b//2
             # tote ginetai merge kai telos diagrafetai to node
             print("************* MERGE **************")
             if self.nodes[index].left_sibling is None:
-                # if the left_sibling is none
-                # means that its the leftest node
                 borrowed_value = self.nodes[self.nodes[index].right_sibling].values[0]
+                borrowed_ptr = self.nodes[self.nodes[index].right_sibling].ptrs[0]
                 if len(self.nodes[self.nodes[index].right_sibling].values) > self.min_leaf_count:
-                    self.nodes[index].values.append(borrowed_value)
-                    self.nodes[self.nodes[index].right_sibling].values.remove(borrowed_value)
+                    self.nodes[index].insert(borrowed_value, borrowed_ptr)
+                    self.nodes[self.nodes[index].right_sibling].delete(borrowed_value, borrowed_ptr)
 
                     for i in range(len(self.nodes[self.nodes[index].parent].values)):
                         if self.nodes[self.nodes[index].parent].values[i] == borrowed_value:
-                            self.nodes[self.nodes[index].parent].values[i] = self.nodes[self.nodes[index].right_sibling].values[0]
+                            self.nodes[self.nodes[index].parent].delete(self.nodes[self.nodes[index].parent].values[i], self.nodes[self.nodes[index].parent].ptrs[i])
+                            self.nodes[self.nodes[index].parent].insert(self.nodes[self.nodes[index].right_sibling].values[0], None)
                             break
+
             elif is_internal:
                 left_sib = self.nodes[self.nodes[index].left_sibling]
                 right_sib = self.nodes[self.nodes[index].right_sibling]
-                if len(left_sib.values) > self.min_leaf_count: #and self.nodes[left_sib.parent] == self.nodes[index].parent:
-                    self.nodes[index].values.append(max(self.nodes[self.nodes[index].left_sibling].values))
-                    left_sib.values.pop(-1)
-                    check_node.values[0] = self.nodes[index].values[0]
+                if len(left_sib.values) > self.min_leaf_count and self.nodes[left_sib.parent] == self.nodes[self.nodes[index].parent]:
+                    self.nodes[index].insert(left_sib.values[-1], left_sib.ptrs[-1])
+                    left_sib.delete(left_sib.values[-1], left_sib.ptrs[-1])
+
+                    check_node.delete(check_node.values[0], check_node.ptrs[0])
+                    check_node.insert(self.nodes[index].values[0], None)
 
                 elif len(right_sib.values) > self.min_leaf_count:
+                    # to 90 kai sto internal kai sto leaf ginetai right sibling min value (100)
+                    # to right sibling min value sto parent node pairnei thn timh toy neou right sibling min value
+                    borrowed_value = right_sib.values[0]
+                    borrowed_ptr = right_sib.ptrs[0]
+                    self.nodes[index].insert(borrowed_value, borrowed_ptr)
+                    #self.nodes[index].values.append(borrowed_value)
+                    #self.nodes[index].ptrs.append(borrowed_ptr)
 
-                    # sto mesaio dentro ginetai komple ektos apo to deksi
+                    new_index = check_node.values.index(value)
+                    popped = right_sib.values[0]
+                    right_sib.delete(right_sib.values[0], right_sib.ptrs[0])
+                    popped_parent = self.nodes[self.nodes[index].parent].values.index(popped)
 
-                    self.nodes[index].values.append(self.nodes[self.nodes[index].right_sibling].values[0])
-                    check_node.values[0] = self.nodes[index].values[0]
-                    #pop_index = check_node.values.index(right_sib.values[0])
-                    right_sib.values.pop(0)
-                    self.nodes[self.nodes[index].parent].values[0] = self.nodes[self.nodes[index].right_sibling].values[0]
-                    #check_node.values[0] = self.nodes[index].values[0]
+                    check_node.delete(check_node.values[new_index], check_node.ptrs[new_index])
+                    check_node.insert(self.nodes[index].values[0], None)
 
+                    prntnode = self.nodes[self.nodes[index].parent]
+                    prntnode.delete(prntnode.values[popped_parent], prntnode.ptrs[popped_parent])
+                    prntnode.insert(right_sib.values[0], None)
 
-
+                elif len(right_sib.values) == self.min_leaf_count:
+                    print("************ MERGE *************")
+                    self.merge(self.nodes[index], self.nodes[self.nodes[index].right_sibling])
+                    pass
+                # diagrafw to 55
+                # enwnetai me to deksia an den exei timh na tou danisei
+                # to parent node tou deksia ginetai grandparent node (dhladh parent node sto parent node tou)
         else:
-            for i in range(len(self.nodes[self.nodes[index].parent].values)):
-                if value == self.nodes[self.nodes[index].parent].values[i]:
-                    self.nodes[self.nodes[index].parent].values[i] = self.nodes[index].values[0]
+            parentnode = self.nodes[self.nodes[index].parent]
+            for i in range(len(parentnode.values)):
+                if value == parentnode.values[i]:
+                    parentnode.delete(parentnode.values[i], parentnode.ptrs[i])
+                    parentnode.insert(self.nodes[index].values[0], None)#self.nodes[index].ptrs[0])
                     break
-
-
             node = self.nodes[index]
             while node.parent is not None:
                 # loop through the parents to check if the deleted value is
@@ -212,7 +243,8 @@ class Btree:
                 if value in node.values:
                     for i in range(len(node.values)):
                         if value == node.values[i]:
-                            node.values[i] = self.nodes[index].values[0]
+                            node.delete(node.values[i], node.ptrs[i])
+                            node.insert(self.nodes[index].values[0], None)
                             break
                     break
 
@@ -221,10 +253,12 @@ class Btree:
     #                MERGE                #
     #######################################
 
-    def merge(self, node_id):
-        # when leaf node count is below ceil(b/2)
-        # merge with the left
-        node = self.nodes[node_id]
+    def merge(self, node1, node2):
+        node = Node(self.b, node2.values+node1.values, node1.ptrs+node2.ptrs,node1.left_sibling, node2.right_sibling, node2.parent, True)
+
+        self.nodes.remove(node1)
+        self.nodes.remove(node2)
+        return node
 
         # if there's a left sibling and has enough values
         # then borrow from left
@@ -235,41 +269,41 @@ class Btree:
         # self.nodes.pop(index)  # xwris auto, to node tha exei mia kenh lista mesa -> []
 
         # if the node has less elements than b/2
-        """
-        # the node has less than b/2-1 keys
-        if len(self.nodes[index].values) < math.ceil(self.b / 2) - 1:
-            left_sibling_node = None
-            right_sibling_node = None
-            if self.nodes[index].left_sibling is not None: # borei na mhn yparxei aristero sibling
-                left_sibling_node = self.nodes[self.nodes[index].left_sibling]
-            if self.nodes[index].right_sibling is not None: # borei na mhn yparxei deksi sibling
-                right_sibling_node = self.nodes[self.nodes[index].right_sibling]
-
-            # see if we can borrow from the left sibling
-            if left_sibling_node is not None:
-                if len(left_sibling_node.values) < math.ceil(self.b / 2) - 1:
-                    # insert to the node the max value from the left sibling and delete it from the sibling
-                    self.nodes[index].insert(left_sibling_node.values[-1]) # -1 = max value (from right to left)
-                    left_sibling_node.delete(left_sibling_node.values[-1])
-                    # if we can't borrow from the left sibling, then we see if there is a left sibling and merge them
-                else:
-                    self.merge(index)
-                    # make a new node
-                    # new_values = self.nodes[index].values + left_sibling_node.values
-                    # new_values.sort(reverse=False)
-                    # new_ptrs = self.nodes[index].ptrs + left_sibling_node.ptrs
-                    # new_node = Node(self, self.b, values=new_values.sort(reverse=False) , ptrs=new_ptrs.sort(reverse=False),
-                    # left_sibling=self.nodes[index].left_sibling, right_sibling=self.nodes[index].right_sibling, parent=self.nodes[index].parent, is_leaf=self.nodes[index].is_leaf)
-                    # self.nodes[index] = new_node
-            elif right_sibling_node is not None:
-                if len(right_sibling_node.values) < math.ceil(self.b / 2) - 1:
-                    # insert to the node the min value of the right sibling
-                    self.nodes[index].insert(right_sibling_node.values[0])
-                    right_sibling_node.delete(right_sibling_node.values[0])
-                # else merge with the right sibling
-                else:
-                    self.merge(index)
-        """
+        # """
+        # # the node has less than b/2-1 keys
+        # if len(self.nodes[index].values) < math.ceil(self.b / 2) - 1:
+        #     left_sibling_node = None
+        #     right_sibling_node = None
+        #     if self.nodes[index].left_sibling is not None: # borei na mhn yparxei aristero sibling
+        #         left_sibling_node = self.nodes[self.nodes[index].left_sibling]
+        #     if self.nodes[index].right_sibling is not None: # borei na mhn yparxei deksi sibling
+        #         right_sibling_node = self.nodes[self.nodes[index].right_sibling]
+        #
+        #     # see if we can borrow from the left sibling
+        #     if left_sibling_node is not None:
+        #         if len(left_sibling_node.values) < math.ceil(self.b / 2) - 1:
+        #             # insert to the node the max value from the left sibling and delete it from the sibling
+        #             self.nodes[index].insert(left_sibling_node.values[-1]) # -1 = max value (from right to left)
+        #             left_sibling_node.delete(left_sibling_node.values[-1])
+        #             # if we can't borrow from the left sibling, then we see if there is a left sibling and merge them
+        #         else:
+        #             self.merge(index)
+        #             # make a new node
+        #             # new_values = self.nodes[index].values + left_sibling_node.values
+        #             # new_values.sort(reverse=False)
+        #             # new_ptrs = self.nodes[index].ptrs + left_sibling_node.ptrs
+        #             # new_node = Node(self, self.b, values=new_values.sort(reverse=False) , ptrs=new_ptrs.sort(reverse=False),
+        #             # left_sibling=self.nodes[index].left_sibling, right_sibling=self.nodes[index].right_sibling, parent=self.nodes[index].parent, is_leaf=self.nodes[index].is_leaf)
+        #             # self.nodes[index] = new_node
+        #     elif right_sibling_node is not None:
+        #         if len(right_sibling_node.values) < math.ceil(self.b / 2) - 1:
+        #             # insert to the node the min value of the right sibling
+        #             self.nodes[index].insert(right_sibling_node.values[0])
+        #             right_sibling_node.delete(right_sibling_node.values[0])
+        #         # else merge with the right sibling
+        #         else:
+        #             self.merge(index)
+        # """
 
     def borrow(self, sibling, node_id):
         if sibling == 'left':
@@ -283,7 +317,7 @@ class Btree:
             node.values.sort(reverse=False)
             # check if the left node needs merge
             if len(left_node.values) < self.b / 2:
-                self.merge(node.left_sibling)
+                #self.merge(node.left_sibling)
                 print('left node mpika')
         else:
             node = self.nodes[node_id]
@@ -296,7 +330,7 @@ class Btree:
             node.values.sort(reverse=False)
             # check if the left node needs merge
             if len(right_node.values) < self.b / 2:
-                self.merge(node.right_sibling)
+                #self.merge(node.right_sibling)
                 print('right node mpika')
 
     def _search(self, value, return_ops=False):
@@ -317,11 +351,12 @@ class Btree:
             node = self.nodes[idx]
             ops += ops1
 
+        index = self.nodes.index(node)
         # finally return the index of the appropriate node (and the ops if you want to)
         if return_ops:
-            return self.nodes.index(node), ops
+            return index, ops
         else:
-            return self.nodes.index(node)
+            return index
 
     def split(self, node_id):
         """
