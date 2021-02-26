@@ -32,4 +32,3 @@ bt.delete(8, 0)
 bt.delete(3,0)
 
 bt.plot()
-

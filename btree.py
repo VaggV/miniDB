@@ -192,7 +192,7 @@ class Btree:
                     check_node.values[0] = self.nodes[index].values[0]
                     #pop_index = check_node.values.index(right_sib.values[0])
                     right_sib.values.pop(0)
-                    self.nodes[self.nodes[index].parent].values[0] = self.nodes[self.nodes[index].right_sibling].values[0]
+                    self.nodes[self.nodes[index].parent].values[-1] = self.nodes[self.nodes[index].right_sibling].values[0]
                     #check_node.values[0] = self.nodes[index].values[0]
 
 
