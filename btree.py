@@ -3,7 +3,6 @@ https://en.wikipedia.org/wiki/B%2B_tree
 """
 
 import math
-import os
 
 class Node:
     """
@@ -141,143 +140,143 @@ class Btree:
         if len(self.nodes[index].values) == self.b:
             self.split(index)
 
-    def delete2(self, value):
-        if self.root is None:
-            print('Tree is empty')
-            return
-
-        # find the index of the node that the value and its ptr/s should be inserted to (_search)
-        index = self._search(value)
-
-        index_in_node = self.nodes[index].values.index(value)
-        pointerr = self.nodes[index].ptrs[index_in_node]
-        # print ("**************************************")
-        # print(f"Value: {value}, pointer: {pointerr} ")
-        # print(f"Node values: {self.nodes[index].values}, Node pointers: {self.nodes[index].ptrs}")
-        # print ("**************************************")
-        is_internal = False
-        check_node = self.nodes[index]
-        while check_node.parent is not None:
-            check_node = self.nodes[check_node.parent]
-            if value in check_node.values:
-                is_internal = True
-                break
-
-        # delete it
-        self.nodes[index].delete(value, pointerr)
-
-        parent_node = None
-        right_sib = None
-        left_sib = None
-
-        if len(self.nodes[index].values) < self.min_leaf_count:
-            # If the values are below the minimum leaf count then ...
-            if not is_internal:
-                if self.nodes[index].left_sibling is None:
-                    # if there is no left sibling it means its the leftest node
-
-                    borrowed_value = self.nodes[self.nodes[index].right_sibling].values[0]
-                    borrowed_ptr = self.nodes[self.nodes[index].right_sibling].ptrs[0]
-                    if len(self.nodes[self.nodes[index].right_sibling].values) > self.min_leaf_count:
-                        # if there is enough values in the right sibling then borrow
-
-                        self.nodes[index].insert(borrowed_value, borrowed_ptr)
-                        self.nodes[self.nodes[index].right_sibling].delete(borrowed_value, borrowed_ptr)
-
-                        for i in range(len(self.nodes[self.nodes[index].parent].values)):
-                            if self.nodes[self.nodes[index].parent].values[i] == borrowed_value:
-                                self.nodes[self.nodes[index].parent].delete(self.nodes[self.nodes[index].parent].values[i], self.nodes[self.nodes[index].parent].ptrs[i])
-                                self.nodes[self.nodes[index].parent].insert(self.nodes[self.nodes[index].right_sibling].values[0], None)
-                                break
-                    else:
-                        # else there is not enough values in the right sibling and it has to merge
-
-                        pass
-
-            elif is_internal:
-                # else if the node is present in internal nodes
-
-                left_sib = self.nodes[self.nodes[index].left_sibling]
-                right_sib = self.nodes[self.nodes[index].right_sibling]
-                if len(left_sib.values) > self.min_leaf_count and self.nodes[left_sib.parent] == self.nodes[self.nodes[index].parent]:
-                    # if the left node has enough values and is an immediate sibling
-
-                    self.nodes[index].insert(left_sib.values[-1], left_sib.ptrs[-1])
-                    left_sib.delete(left_sib.values[-1], left_sib.ptrs[-1])
-
-                    check_node.delete(check_node.values[0], check_node.ptrs[0])
-                    check_node.insert(self.nodes[index].values[0], None)
-
-                elif len(right_sib.values) > self.min_leaf_count and self.nodes[right_sib.parent] == self.nodes[self.nodes[index].parent]:
-                    # else if the right node has enough values and is an immediate sibling
-
-                    borrowed_value = right_sib.values[0]
-                    borrowed_ptr = right_sib.ptrs[0]
-                    self.nodes[index].insert(borrowed_value, borrowed_ptr)
-
-                    new_index = check_node.values.index(value)
-                    popped = right_sib.values[0]
-                    right_sib.delete(right_sib.values[0], right_sib.ptrs[0])
-                    popped_parent = self.nodes[self.nodes[index].parent].values.index(popped)
-
-                    check_node.delete(check_node.values[new_index], check_node.ptrs[new_index])
-                    check_node.insert(self.nodes[index].values[0], None)
-
-                    prntnode = self.nodes[self.nodes[index].parent]
-                    prntnode.delete(prntnode.values[popped_parent], prntnode.ptrs[popped_parent])
-                    prntnode.insert(right_sib.values[0], None)
-
-                elif self.nodes[right_sib.parent] == self.nodes[self.nodes[index].parent]:
-                    # else if the right sibling values is equal to the minimum leaf count
-                    # it means the self.node cant borrow and it has to merge
-                    parent_node = self.nodes[self.nodes[index].parent]
-                    grandparent_node = self.nodes[parent_node.parent]
-                    print(f"Grandparent_node pointers: {grandparent_node.ptrs} ")
-                    print(f"Deleted value: {value}")
-                    if len(parent_node.ptrs) == self.min_child_count:
-                        # = self.nodes[right_sib.parent]
-                        print(f"Deleted value: {value}")
-
-                        grandpindex = grandparent_node.ptrs.index(self.nodes[index].parent) + 1
-                        right_sibling_parent = self.nodes[self.nodes[parent_node.parent].ptrs[grandpindex]]
-                        print(f"right_sibling_parent values: {right_sibling_parent.values}")
-                        print(f"right sibling index: {grandpindex}")
-                        print(f"right sibling parent pointers: {right_sibling_parent.ptrs}")
-                        if len(right_sibling_parent.ptrs) >= self.min_child_count:
-                            grandparent_node.values.remove(self.nodes[right_sibling_parent.ptrs[0]].values[0])
-
-                            right_sibling_parent.values.insert(0,self.nodes[right_sibling_parent.ptrs[0]].values[0])
-                            right_sibling_parent.ptrs.insert(0, self.nodes[index].right_sibling)
-
-                            grandparent_node.ptrs.remove(self.nodes.index(parent_node))
-                            parent_node = None
-                            check_node.values[0] = self.nodes[self.nodes[index].right_sibling].values[0]
-                    else:
-                        print(f"Check node values: {check_node.values}")
-                        print(f"right sibling values[0]: {self.nodes[self.nodes[index].right_sibling].values[0]}")
-                        self.replace_item(check_node.values, value, self.nodes[self.nodes[index].right_sibling].values[0])
-                        parent_node.values.remove(self.nodes[self.nodes[index].right_sibling].values[0])
-                    self.nodes[index] = None
-                    pass
-        else:
-            parentnode = self.nodes[self.nodes[index].parent]
-            for i in range(len(parentnode.values)):
-                if value == parentnode.values[i]:
-                    parentnode.delete(parentnode.values[i], parentnode.ptrs[i])
-                    parentnode.insert(self.nodes[index].values[0], None)
-                    break
-            node = self.nodes[index]
-            while node.parent is not None:
-                # loop through the parents to check if the deleted value is
-                # in an internal node
-                node = self.nodes[node.parent]
-                if value in node.values:
-                    for i in range(len(node.values)):
-                        if value == node.values[i]:
-                            node.delete(node.values[i], node.ptrs[i])
-                            node.insert(self.nodes[index].values[0], None)
-                            break
-                    break
+    # def delete2(self, value):
+    #     if self.root is None:
+    #         print('Tree is empty')
+    #         return
+    #
+    #     # find the index of the node that the value and its ptr/s should be inserted to (_search)
+    #     index = self._search(value)
+    #
+    #     index_in_node = self.nodes[index].values.index(value)
+    #     pointerr = self.nodes[index].ptrs[index_in_node]
+    #     # print ("**************************************")
+    #     # print(f"Value: {value}, pointer: {pointerr} ")
+    #     # print(f"Node values: {self.nodes[index].values}, Node pointers: {self.nodes[index].ptrs}")
+    #     # print ("**************************************")
+    #     is_internal = False
+    #     check_node = self.nodes[index]
+    #     while check_node.parent is not None:
+    #         check_node = self.nodes[check_node.parent]
+    #         if value in check_node.values:
+    #             is_internal = True
+    #             break
+    #
+    #     # delete it
+    #     self.nodes[index].delete(value, pointerr)
+    #
+    #     parent_node = None
+    #     right_sib = None
+    #     left_sib = None
+    #
+    #     if len(self.nodes[index].values) < self.min_leaf_count:
+    #         # If the values are below the minimum leaf count then ...
+    #         if not is_internal:
+    #             if self.nodes[index].left_sibling is None:
+    #                 # if there is no left sibling it means its the leftest node
+    #
+    #                 borrowed_value = self.nodes[self.nodes[index].right_sibling].values[0]
+    #                 borrowed_ptr = self.nodes[self.nodes[index].right_sibling].ptrs[0]
+    #                 if len(self.nodes[self.nodes[index].right_sibling].values) > self.min_leaf_count:
+    #                     # if there is enough values in the right sibling then borrow
+    #
+    #                     self.nodes[index].insert(borrowed_value, borrowed_ptr)
+    #                     self.nodes[self.nodes[index].right_sibling].delete(borrowed_value, borrowed_ptr)
+    #
+    #                     for i in range(len(self.nodes[self.nodes[index].parent].values)):
+    #                         if self.nodes[self.nodes[index].parent].values[i] == borrowed_value:
+    #                             self.nodes[self.nodes[index].parent].delete(self.nodes[self.nodes[index].parent].values[i], self.nodes[self.nodes[index].parent].ptrs[i])
+    #                             self.nodes[self.nodes[index].parent].insert(self.nodes[self.nodes[index].right_sibling].values[0], None)
+    #                             break
+    #                 else:
+    #                     # else there is not enough values in the right sibling and it has to merge
+    #
+    #                     pass
+    #
+    #         elif is_internal:
+    #             # else if the node is present in internal nodes
+    #
+    #             left_sib = self.nodes[self.nodes[index].left_sibling]
+    #             right_sib = self.nodes[self.nodes[index].right_sibling]
+    #             if len(left_sib.values) > self.min_leaf_count and self.nodes[left_sib.parent] == self.nodes[self.nodes[index].parent]:
+    #                 # if the left node has enough values and is an immediate sibling
+    #
+    #                 self.nodes[index].insert(left_sib.values[-1], left_sib.ptrs[-1])
+    #                 left_sib.delete(left_sib.values[-1], left_sib.ptrs[-1])
+    #
+    #                 check_node.delete(check_node.values[0], check_node.ptrs[0])
+    #                 check_node.insert(self.nodes[index].values[0], None)
+    #
+    #             elif len(right_sib.values) > self.min_leaf_count and self.nodes[right_sib.parent] == self.nodes[self.nodes[index].parent]:
+    #                 # else if the right node has enough values and is an immediate sibling
+    #
+    #                 borrowed_value = right_sib.values[0]
+    #                 borrowed_ptr = right_sib.ptrs[0]
+    #                 self.nodes[index].insert(borrowed_value, borrowed_ptr)
+    #
+    #                 new_index = check_node.values.index(value)
+    #                 popped = right_sib.values[0]
+    #                 right_sib.delete(right_sib.values[0], right_sib.ptrs[0])
+    #                 popped_parent = self.nodes[self.nodes[index].parent].values.index(popped)
+    #
+    #                 check_node.delete(check_node.values[new_index], check_node.ptrs[new_index])
+    #                 check_node.insert(self.nodes[index].values[0], None)
+    #
+    #                 prntnode = self.nodes[self.nodes[index].parent]
+    #                 prntnode.delete(prntnode.values[popped_parent], prntnode.ptrs[popped_parent])
+    #                 prntnode.insert(right_sib.values[0], None)
+    #
+    #             elif self.nodes[right_sib.parent] == self.nodes[self.nodes[index].parent]:
+    #                 # else if the right sibling values is equal to the minimum leaf count
+    #                 # it means the self.node cant borrow and it has to merge
+    #                 parent_node = self.nodes[self.nodes[index].parent]
+    #                 grandparent_node = self.nodes[parent_node.parent]
+    #                 print(f"Grandparent_node pointers: {grandparent_node.ptrs} ")
+    #                 print(f"Deleted value: {value}")
+    #                 if len(parent_node.ptrs) == self.min_child_count:
+    #                     # = self.nodes[right_sib.parent]
+    #                     print(f"Deleted value: {value}")
+    #
+    #                     grandpindex = grandparent_node.ptrs.index(self.nodes[index].parent) + 1
+    #                     right_sibling_parent = self.nodes[self.nodes[parent_node.parent].ptrs[grandpindex]]
+    #                     print(f"right_sibling_parent values: {right_sibling_parent.values}")
+    #                     print(f"right sibling index: {grandpindex}")
+    #                     print(f"right sibling parent pointers: {right_sibling_parent.ptrs}")
+    #                     if len(right_sibling_parent.ptrs) >= self.min_child_count:
+    #                         grandparent_node.values.remove(self.nodes[right_sibling_parent.ptrs[0]].values[0])
+    #
+    #                         right_sibling_parent.values.insert(0,self.nodes[right_sibling_parent.ptrs[0]].values[0])
+    #                         right_sibling_parent.ptrs.insert(0, self.nodes[index].right_sibling)
+    #
+    #                         grandparent_node.ptrs.remove(self.nodes.index(parent_node))
+    #                         parent_node = None
+    #                         check_node.values[0] = self.nodes[self.nodes[index].right_sibling].values[0]
+    #                 else:
+    #                     print(f"Check node values: {check_node.values}")
+    #                     print(f"right sibling values[0]: {self.nodes[self.nodes[index].right_sibling].values[0]}")
+    #                     self.replace_item(check_node.values, value, self.nodes[self.nodes[index].right_sibling].values[0])
+    #                     parent_node.values.remove(self.nodes[self.nodes[index].right_sibling].values[0])
+    #                 self.nodes[index] = None
+    #                 pass
+    #     else:
+    #         parentnode = self.nodes[self.nodes[index].parent]
+    #         for i in range(len(parentnode.values)):
+    #             if value == parentnode.values[i]:
+    #                 parentnode.delete(parentnode.values[i], parentnode.ptrs[i])
+    #                 parentnode.insert(self.nodes[index].values[0], None)
+    #                 break
+    #         node = self.nodes[index]
+    #         while node.parent is not None:
+    #             # loop through the parents to check if the deleted value is
+    #             # in an internal node
+    #             node = self.nodes[node.parent]
+    #             if value in node.values:
+    #                 for i in range(len(node.values)):
+    #                     if value == node.values[i]:
+    #                         node.delete(node.values[i], node.ptrs[i])
+    #                         node.insert(self.nodes[index].values[0], None)
+    #                         break
+    #                 break
 
     def replace_item(self, the_list, value, new_value):
         for index, item in enumerate(the_list):
@@ -382,6 +381,8 @@ class Btree:
                     # 3. merge with rParSibling node
                     if is_internal:
                         self.merge(index, thisNode, rSibling, value, 'right', internalNode)
+                    else:
+                        self.merge(index, thisNode, rSibling, value, 'right')
                 else:
                     # 3. borrow (from rParSibling)
                     if is_internal:
@@ -396,8 +397,6 @@ class Btree:
                     #print(f"rightSibling values: {rSibling.values}")
                     #print(f"rightParSibling values: {rParSibling.values}")
                     self.merge(index, thisNode, lSibling, value, 'left')
-
-
                 else:
                     # 3. borrow (from lParSibling)
                     self.borrow(thisNode, lSibling, 'left', value, internalNode)
@@ -441,10 +440,13 @@ class Btree:
                 parentNode.values.remove(siblingNode.values[0])
 
         if siblingRorL == 'left':
-            this_Node.left_sibling = self.nodes[this_Node.left_sibling].left_sibling
-            #print(f"thisnode left_sibling values: {self.nodes[thisNode.left_sibling].values}")
+            thisNode.left_sibling = siblingNode.left_sibling
+            if siblingNode.left_sibling is not None:
+                self.nodes[siblingNode.left_sibling].right_sibling = thisNodeIndex
         elif siblingRorL == 'right':
-            this_Node.right_sibling = self.nodes[this_Node.right_sibling].right_sibling
+            thisNode.right_sibling = siblingNode.right_sibling
+            if siblingNode.right_sibling is not None:
+                self.nodes[siblingNode.right_sibling].left_sibling = thisNodeIndex
 
         if internalNode is not None:
             for i, value in enumerate(internalNode.values):
@@ -457,8 +459,6 @@ class Btree:
 
         parentNode.ptrs.remove(index_sibling_node)
         self.nodes[index_sibling_node] = None
-
-
 
 
         # dokimasa na ftiaksw neo node anti na kanoume insert sto allo alla prepei na eixe ena mikro lathos kai to kana comment

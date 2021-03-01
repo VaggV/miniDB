@@ -136,7 +136,8 @@ bt.delete(180)
 
 
 
-#bt.delete(130)
+bt.delete(130)
+bt.delete(131)
 # bt.delete(71)
 # bt.delete(120)
 # bt.delete(121)
