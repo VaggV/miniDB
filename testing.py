@@ -1,6 +1,6 @@
 from btree import Btree
 
-bt = Btree(4)
+bt = Btree(3)
 
 # dentro 1
 
@@ -120,20 +120,20 @@ for i in range(20):
 for i in range(15):
     bt.insert(i*10+1)
 
-bt.delete(0)
-bt.delete(1)
-bt.delete(10)
-bt.delete(11)
-bt.delete(20)
-bt.delete(90)
-bt.delete(91)
-bt.delete(100)
-bt.delete(101)
-bt.delete(110)
-
-bt.delete(160)
-bt.delete(170)
-bt.delete(180)
+# bt.delete(0)
+# bt.delete(1)
+# bt.delete(10)
+# bt.delete(11)
+# bt.delete(20)
+# bt.delete(90)
+# bt.delete(91)
+# bt.delete(100)
+# bt.delete(101)
+# bt.delete(110)
+#
+# bt.delete(160)
+# bt.delete(170)
+# bt.delete(180)
 
 # bt.delete(21)
 # bt.delete(30)

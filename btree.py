@@ -283,7 +283,6 @@ class Btree:
     def replace_item(self, the_list, value, new_value):
         for index, item in enumerate(the_list):
             if value == the_list[index]:
-                print(f"NEW VALUE: {new_value}")
                 the_list[index] = new_value
                 return
         return
@@ -319,6 +318,14 @@ class Btree:
             print('Tree is empty')
             return
 
+        # remove None nodes that are at the end of the list
+        for i in reversed(self.nodes):
+            if i is None:
+                self.nodes.remove(i)
+            else:
+                break
+
+
         # 1. Find the entry to be deleted
         index = self._search(value)
         if value not in self.nodes[index].values:
@@ -350,8 +357,6 @@ class Btree:
             rParSibling = rSibling
         if lSibling is not None and lSibling.parent == thisNode.parent:
             lParSibling = lSibling
-
-        #print(f"delvalue: {value} , right sibling values = {rSibling.values}")
 
 
         # 2. If this leaf is left with less than the required amount of values then:
@@ -394,16 +399,12 @@ class Btree:
                 else:
                     # 3. borrow (from rParSibling)
                     if internalNode is not None:
-                        print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-                        print(f"delvalue: {value} , right sibling values = {rSibling.values}")
                         self.borrow(thisNode, rSibling, 'right', value, internalNode)
                     else:
                         self.borrow(thisNode, rSibling, 'right', value)
             elif lParSibling is not None:
                 if len(lParSibling.values) <= self.min_leaf_count:
                     # 3. merge with lParSibling node
-                    #print(f"rightSibling values: {rSibling.values}")
-                    #print(f"rightParSibling values: {rParSibling.values}")
                     self.merge(index, thisNode, lSibling, value, 'left')
                     if internalNode is not None:
                         self.redistribute(index, thisNode, value, 'left', lSibling, thisNode.parent, internalNode=internalNode)
@@ -421,7 +422,6 @@ class Btree:
                         lastNode = node
                         for j, val in enumerate(node.values):
                             values += 1
-                print(f"VALUES : {values}")
                 if values == 0:
                     self.nodes[index] = None
                     self.nodes = []
@@ -461,43 +461,49 @@ class Btree:
         # print("########################################")
         # print("########################################")
 
-    def merge(self, thisNodeIndex, thisNode, siblingNode, deletedValue, siblingRorL, internalNode=None):
-        this_Node = self.nodes[thisNodeIndex]
+    def merge(self, thisNodeIndex, thisNode, siblingNode, deletedValue, siblingRorL, internalNode=None, mergeInternalNodes=False):
+        # if we dont have to merge internal nodes
+        if not mergeInternalNodes:
+            this_Node = self.nodes[thisNodeIndex]
 
-        #if siblingNode in self.nodes:
-        index_sibling_node = self.nodes.index(siblingNode)
+            #if siblingNode in self.nodes:
+            index_sibling_node = self.nodes.index(siblingNode)
 
-        parentNode = self.nodes[thisNode.parent]
-        if deletedValue in parentNode.values:
-            parentNode.values.remove(deletedValue)
-        else:
+            parentNode = self.nodes[thisNode.parent]
+            if deletedValue in parentNode.values:
+                parentNode.values.remove(deletedValue)
+            else:
+                if siblingRorL == 'left':
+                    parentNode.values.remove(thisNode.values[0])
+                elif siblingRorL == 'right':
+                    parentNode.values.remove(siblingNode.values[0])
+
             if siblingRorL == 'left':
-                parentNode.values.remove(thisNode.values[0])
+                thisNode.left_sibling = siblingNode.left_sibling
+                if siblingNode.left_sibling is not None:
+                    self.nodes[siblingNode.left_sibling].right_sibling = thisNodeIndex
             elif siblingRorL == 'right':
-                parentNode.values.remove(siblingNode.values[0])
+                thisNode.right_sibling = siblingNode.right_sibling
+                if siblingNode.right_sibling is not None:
+                    self.nodes[siblingNode.right_sibling].left_sibling = thisNodeIndex
 
-        if siblingRorL == 'left':
-            thisNode.left_sibling = siblingNode.left_sibling
-            if siblingNode.left_sibling is not None:
-                self.nodes[siblingNode.left_sibling].right_sibling = thisNodeIndex
-        elif siblingRorL == 'right':
-            thisNode.right_sibling = siblingNode.right_sibling
-            if siblingNode.right_sibling is not None:
-                self.nodes[siblingNode.right_sibling].left_sibling = thisNodeIndex
+            for i, value in enumerate(siblingNode.values):
+                thisNode.insert(siblingNode.values[i], siblingNode.ptrs[i])
 
-        for i, value in enumerate(siblingNode.values):
-            thisNode.insert(siblingNode.values[i], siblingNode.ptrs[i])
+            if internalNode is not None:
+                for i, value in enumerate(internalNode.values):
+                    if value == deletedValue:
+                        # print(f"internal node values[i] = {internalNode.values[i]}")
+                        # print(f"thisnode values[0] {thisNode.values[0]}")
+                        internalNode.values[i] = thisNode.values[0]
+                        break
 
-        if internalNode is not None:
-            for i, value in enumerate(internalNode.values):
-                if value == deletedValue:
-                    print(f"internal node values[i] = {internalNode.values[i]}")
-                    print(f"thisnode values[0] {thisNode.values[0]}")
-                    internalNode.values[i] = thisNode.values[0]
-                    break
+            parentNode.ptrs.remove(index_sibling_node)
+            self.nodes[index_sibling_node] = None
+        # else if we have to merge internal nodes
+        else:
 
-        parentNode.ptrs.remove(index_sibling_node)
-        self.nodes[index_sibling_node] = None
+            pass
 
     def borrow(self, thisNode, siblingNode=None, siblingRorL=None, deletedValue=None, internalNode=None, borrowNode = False):
         if not borrowNode:
@@ -551,11 +557,7 @@ class Btree:
             if leftParSibNode is not None and len(leftParSibNode.ptrs) > self.min_child_count:
                 borrowedNode = self.nodes[leftParSibNode.ptrs[-1]]
                 borrowedNodeIndex = leftParSibNode.ptrs[-1]
-
-
                 borrowedNode.parent = thisNode.parent
-
-
                 leftParSibNode.ptrs.remove(borrowedNodeIndex)
                 parentNode.ptrs.insert(0, borrowedNodeIndex)
 
@@ -571,11 +573,7 @@ class Btree:
             elif rightParSibNode is not None and len(rightParSibNode.ptrs) > self.min_child_count:
                 borrowedNode = self.nodes[rightParSibNode.ptrs[0]]
                 borrowedNodeIndex = rightParSibNode.ptrs[0]
-
-
                 borrowedNode.parent = thisNode.parent
-
-
                 rightParSibNode.ptrs.remove(borrowedNodeIndex)
                 parentNode.ptrs.append(borrowedNodeIndex)
 
@@ -601,9 +599,10 @@ class Btree:
 
         if len(parentNode.ptrs) < self.min_child_count:
             borrowed = self.borrow(thisNode, borrowNode=True)
+            # if it didnt borrow any child
             if not borrowed:
+                # then internal nodes have to be merged
                 print("INTERNAL NODES HAVE TO BE MERGED")
-                # then merge internal nodes
                 pass
         else:
             return
@@ -744,35 +743,35 @@ class Btree:
 
     def plot(self):
         #Test
-        print("################## LEAFS ####################")
-        for i in range(len(self.nodes)):
-            if self.nodes[i] is not None:
-                if self.nodes[i].is_leaf:
-                    print(f"[{i}] -- Pointers: {self.nodes[i].ptrs}, Values: {self.nodes[i].values}, \n Parent: {self.nodes[i].parent}")
-                    # print(f"Current node values: {self.nodes[i].values}")
-                    # leftParent, rightParent = self.getsiblingsofparent(self.nodes[i])
-                    # if leftParent is not None and rightParent is not None:
-                    #     print(f"{self.nodes[leftParent].values} , {self.nodes[self.nodes[i].parent].values}, {self.nodes[rightParent].values}")
-                    # elif leftParent is not None:
-                    #     print(f"{self.nodes[leftParent].values} , {self.nodes[self.nodes[i].parent].values}, [       ]")
-                    # elif rightParent is not None:
-                    #     print(f"[       ], {self.nodes[self.nodes[i].parent].values}, {self.nodes[rightParent].values}")
-                    # print("\n")
-        print("#############################################")
+        # print("################## LEAFS ####################")
+        # for i in range(len(self.nodes)):
+        #     if self.nodes[i] is not None:
+        #         if self.nodes[i].is_leaf:
+        #             print(f"[{i}] -- Pointers: {self.nodes[i].ptrs}, Values: {self.nodes[i].values}")
+        #             # print(f"Current node values: {self.nodes[i].values}")
+        #             # leftParent, rightParent = self.getsiblingsofparent(self.nodes[i])
+        #             # if leftParent is not None and rightParent is not None:
+        #             #     print(f"{self.nodes[leftParent].values} , {self.nodes[self.nodes[i].parent].values}, {self.nodes[rightParent].values}")
+        #             # elif leftParent is not None:
+        #             #     print(f"{self.nodes[leftParent].values} , {self.nodes[self.nodes[i].parent].values}, [       ]")
+        #             # elif rightParent is not None:
+        #             #     print(f"[       ], {self.nodes[self.nodes[i].parent].values}, {self.nodes[rightParent].values}")
+        #             # print("\n")
+        # print("#############################################")
+        # # for i in range(len(self.nodes)):
+        # #     if self.nodes[i] is not None:
+        # #         if not self.nodes[i].is_leaf:
+        # #             print(f"{self.nodes[i].left_sibling} + {i} + {self.nodes[i].right_sibling}")
+        # print("\n################ NON-LEAFS ##################")
         # for i in range(len(self.nodes)):
         #     if self.nodes[i] is not None:
         #         if not self.nodes[i].is_leaf:
-        #             print(f"{self.nodes[i].left_sibling} + {i} + {self.nodes[i].right_sibling}")
-        print("\n################ NON-LEAFS ##################")
-        for i in range(len(self.nodes)):
-            if self.nodes[i] is not None:
-                if not self.nodes[i].is_leaf:
-                    print(f"[{i}] -- Pointers: {self.nodes[i].ptrs}, Values: {self.nodes[i].values}, \n Parent: {self.nodes[i].parent}")
-        #print(f"Index 18 node values: {self.nodes[18].values}")
-        #print(f"Index 11 node values: {self.nodes[11].values}")
-        print("#############################################")
-        # print(f"Root: {self.nodes[self.root].values}")
-        # print(f"Nodes length: {len(self.nodes)}")
+        #             print(f"[{i}] -- Pointers: {self.nodes[i].ptrs}, Values: {self.nodes[i].values}")
+        # #print(f"Index 18 node values: {self.nodes[18].values}")
+        # #print(f"Index 11 node values: {self.nodes[11].values}")
+        # print("#############################################")
+        # # print(f"Root: {self.nodes[self.root].values}")
+        # # print(f"Nodes length: {len(self.nodes)}")
 
         if not self.nodes:
             print("Cannot plot tree, it is empty")
