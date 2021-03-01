@@ -1,6 +1,6 @@
 from btree import Btree
 
-bt = Btree(7)
+bt = Btree(4)
 
 # dentro 1
 
@@ -120,50 +120,28 @@ for i in range(20):
 for i in range(15):
     bt.insert(i*10+1)
 
+bt.delete(0)
+bt.delete(1)
+bt.delete(10)
+bt.delete(11)
+bt.delete(20)
 bt.delete(90)
 bt.delete(91)
 bt.delete(100)
-bt.delete(111)
-
 bt.delete(101)
 bt.delete(110)
-bt.delete(120)
-bt.delete(121)
-bt.delete(150)
+
 bt.delete(160)
 bt.delete(170)
 bt.delete(180)
 
-bt.delete(130)
-
-bt.delete(11)
-bt.delete(20)
-bt.delete(21)
-bt.delete(30)
-bt.delete(31)
-bt.delete(40)
-bt.delete(41)
-bt.delete(50)
-bt.delete(51)
-bt.delete(60)
-bt.delete(61)
-bt.delete(70)
-bt.delete(71)
-
-bt.delete(200)
-
-bt.delete(81)
-bt.delete(140)
-bt.delete(131)
-bt.delete(80)
-
-bt.delete(0)
-bt.delete(1)
-bt.delete(10)
-bt.delete(141)
-bt.delete(190)
-
-bt.insert(1) # na dw otan to dentro einai adeio na borei na kanei insert apo thn arxh
+# bt.delete(21)
+# bt.delete(30)
+# bt.delete(31)
+# bt.delete(40)
+#bt.delete(41)
+# bt.delete(150)
+# bt.delete(141)
 
 
 bt.plot()
