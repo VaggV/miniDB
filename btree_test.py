@@ -1,12 +1,12 @@
 from btree import Btree
 from random import randrange
-import sys
+
 '''
 Test the Btree
 '''
 
-NUM = int(sys.argv[1])
-B = int(sys.argv[2])
+NUM = 20
+B = 4
 
 lst = []
 
