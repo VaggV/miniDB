@@ -1,13 +1,13 @@
 from btree import Btree
 from random import randrange
+import random
 
 '''
 Test the Btree
 '''
 
-NUM = 20
-B = 4
-
+NUM = 500
+B = 7
 lst = []
 
 while len(lst)!=NUM:
@@ -20,5 +20,18 @@ bt = Btree(B)
 for ind, el in enumerate(lst):
     bt.insert(el, ind)
 
-print(lst)
+print(f"List: {lst}")
+
+counter = 0
+listLength = len(lst)
+for i in range(len(lst)):
+    delvalue = random.choice(lst)
+    lst.remove(delvalue)
+    bt.delete(delvalue)
+    # if counter >= listLength/2:
+    #     break
+    counter += 1
+
+
+print(f"deleted list: {lst}")
 bt.plot()
