@@ -6,23 +6,28 @@ import random
 Test the Btree
 '''
 
-NUM = 500
-B = 7
+NUM = 60
+B = 6
 lst = []
 
+print(f"Branching factor: {B}")
+
+insertcounter = 0
 while len(lst)!=NUM:
     new_v = randrange(100)
     if new_v not in lst:
         lst.append(new_v)
+        insertcounter += 1
+
+print(f"Inserted {insertcounter} items")
 
 bt = Btree(B)
 
 for ind, el in enumerate(lst):
     bt.insert(el, ind)
 
-print(f"List: {lst}")
 
-counter = 0
+delcounter = 0
 listLength = len(lst)
 for i in range(len(lst)):
     delvalue = random.choice(lst)
@@ -30,8 +35,8 @@ for i in range(len(lst)):
     bt.delete(delvalue)
     # if counter >= listLength/2:
     #     break
-    counter += 1
+    delcounter += 1
 
+print(f"Deleted {delcounter} items")
 
-print(f"deleted list: {lst}")
 bt.plot()
